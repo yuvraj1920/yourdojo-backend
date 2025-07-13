@@ -5,7 +5,7 @@ import requests
 app = Flask(__name__)
 CORS(app)
 
-API_KEY = "AIzaSyDAzymZr0UE8YCcUMGkyaJ_K-fFYjP9rbI"  # Replace with your real API key
+API_KEY = "AIzaSyDAzymZr0UE8YCcUMGkyaJ_K-fFYjP9rbI"  
 GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=" + API_KEY
 
 @app.route('/recommend', methods=['POST'])
