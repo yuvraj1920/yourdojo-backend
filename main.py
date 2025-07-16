@@ -12,12 +12,12 @@ app = Flask(__name__)
 CORS(app)  # Allow CORS for all domains temporarily for testing
 
 # Get API key from environment variables
-API_KEY = os.getenv("GOOGLE_GEMINI_API_KEY")
+API_KEY = os.getenv("AIzaSyDAzymZr0UE8YCcUMGkyaJ_K-fFYjP9rbI")
 if not API_KEY:
     raise EnvironmentError("Missing GOOGLE_GEMINI_API_KEY in environment variables")
 
 # Google Gemini API endpoint
-GEMINI_API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={API_KEY}"
+GEMINI_API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={AIzaSyDAzymZr0UE8YCcUMGkyaJ_K-fFYjP9rbI}"
 
 @app.route('/recommend', methods=['POST'])
 def recommend():
