@@ -4,56 +4,55 @@ import requests
 import os
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
+# Load .env variables
 load_dotenv()
 
 app = Flask(name)
-# Restrict CORS to specific origins in production (update as needed)
-CORS(app, resources={r"/recommend": {"origins": "*"}})  # Replace "*" with specific origins in production
+CORS(app)
 
-# Get API key from environment variable
+# Environment configs
 API_KEY = os.getenv("AIzaSyDAzymZr0UE8YCcUMGkyaJ_K-fFYjP9rbI")
 if not API_KEY:
-    raise ValueError("GOOGLE_GEMINI_API_KEY environment variable is not set")
+    raise ValueError("Missing GOOGLE_GEMINI_API_KEY")
 
 GEMINI_API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={API_KEY}"
 
 @app.route('/recommend', methods=['POST'])
 def recommend():
     try:
-        # Validate JSON input
         user_input = request.get_json()
         if not user_input:
-            return jsonify({"error": "Invalid or missing JSON data"}), 400
+            return jsonify({"error": "Missing JSON input"}), 400
 
         # Required fields
         required_fields = ["name", "age", "height", "weight", "experience", "preference", "fitness_goal", "diet", "motivation"]
-        missing_fields = [field for field in required_fields if field not in user_input or user_input[field] is None]
-        if missing_fields:
-            return jsonify({"error": f"Missing required fields: {', '.join(missing_fields)}"}), 400
+        missing = [f for f in required_fields if not user_input.get(f)]
+        if missing:
+            return jsonify({"error": f"Missing required fields: {', '.join(missing)}"}), 400
 
-        # Construct prompt with sanitized input
+        # Build AI prompt
         prompt = f"""
-You are an expert martial arts and fitness coach.
+You are a professional MMA and fitness expert.
 
 Based on the user's profile:
-- Name: {user_input.get("name", "Unknown")}
-- Age: {user_input.get("age", "N/A")}
-- Height: {user_input.get("height", "N/A")} cm
-- Weight: {user_input.get("weight", "N/A")} kg
-- Experience: {user_input.get("experience", "N/A")}
-- Preference: {user_input.get("preference", "N/A")} (e.g., striking, grappling, or mixed)
-- Fitness Goal: {user_input.get("fitness_goal", "N/A")}
-- Diet Type: {user_input.get("diet", "N/A")}
-- Motivation: {user_input.get("motivation", "N/A")}
+- Name: {user_input['name']}
+- Age: {user_input['age']}
+- Height: {user_input['height']} cm
+- Weight: {user_input['weight']} kg
+- Martial Arts Experience: {user_input['experience']}
+- Preference: {user_input['preference']} (striking, grappling, or mixed)
+- Fitness Goal: {user_input['fitness_goal']}
+- Diet Type: {user_input['diet']}
+- Motivation: {user_input['motivation']}
 
-Give a detailed AI response including:
-1. The best martial art for this user and why it suits them.
-2. A training schedule tailored to their experience level (beginner/intermediate/master) with weekly breakdown.
-3. A diet plan based on their diet type and training goals (vegetarian allowed).
-Make the response simple, motivating, and professional.
+Please provide a full recommendation:
+1. Best martial art suited for the user, and why.
+2. A training schedule (beginner to advanced) with weekly breakdown.
+3. A nutrition plan matching their training and dietary preference.
+Keep the tone motivational, user-friendly, and expert-like.
 """
 
+        headers = {"Content-Type": "application/json"}
         body = {
             "contents": [
                 {
@@ -62,35 +61,22 @@ Make the response simple, motivating, and professional.
             ]
         }
 
-        headers = {
-            "Content-Type": "application/json"
-        }
-
-        # Make request to Gemini API with timeout
-        response = requests.post(GEMINI_API_URL, headers=headers, json=body, timeout=10)
-        response.raise_for_status()  # Raise exception for 4xx/5xx status codes
+        # Send request
+        response = requests.post(GEMINI_API_URL, headers=headers, json=body, timeout=15)
+        response.raise_for_status()
 
         ai_reply = response.json()
+        result_text = ai_reply.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text")
 
-        # Safely extract the response text
-        try:
-            output_text = ai_reply.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
-            if not output_text:
-                return jsonify({"error": "Empty response from Gemini API"}), 500
-            return jsonify({"result": output_text}), 200
-        except (IndexError, KeyError) as e:
-            return jsonify({
-                "error": "Unexpected response structure from Gemini API",
-                "raw_response": ai_reply
-            }), 500
+        if not result_text:
+            return jsonify({"error": "Gemini API gave empty response", "raw": ai_reply}), 500
+
+        return jsonify({"result": result_text.strip()}), 200
 
     except requests.exceptions.RequestException as e:
-        return jsonify({"error": f"Failed to connect to Gemini API: {str(e)}"}), 500
-    except ValueError as e:
-        return jsonify({"error": "Invalid JSON input"}), 400
+        return jsonify({"error": f"Gemini API connection failed: {str(e)}"}), 500
     except Exception as e:
-        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+        return jsonify({"error": f"Server error: {str(e)}"}), 500
 
 if name == 'main':
-    # Run with debug=False for production
     app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
