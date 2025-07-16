@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import requests
 import os
+from dotenv import load_dotenv
 
 # Load environment variables from .env file
 load_dotenv()
@@ -11,12 +12,12 @@ app = Flask(__name__)
 CORS(app)  # Allow CORS for all domains temporarily for testing
 
 # Get API key from environment variables
-API_KEY = os.getenv("API_Key")
+API_KEY = os.getenv("GOOGLE_GEMINI_API_KEY")
 if not API_KEY:
     raise EnvironmentError("Missing GOOGLE_GEMINI_API_KEY in environment variables")
 
 # Google Gemini API endpoint
-GEMINI_API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={API_Key}"
+GEMINI_API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={API_KEY}"
 
 @app.route('/recommend', methods=['POST'])
 def recommend():
@@ -81,7 +82,7 @@ Keep it detailed, helpful, and professional.
         return jsonify({"error": f"Failed to connect to Gemini API: {str(e)}"}), 500
     except Exception as e:
         return jsonify({"error": f"Internal server error: {str(e)}"}), 500
-print("'Gemini API URL:",GEMINI_API_URL)
+
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
