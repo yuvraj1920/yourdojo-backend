@@ -12,7 +12,7 @@ app = Flask(name)
 CORS(app, resources={r"/recommend": {"origins": "*"}})  # Replace "*" with specific origins in production
 
 # Get API key from environment variable
-API_KEY = os.getenv("GOOGLE_GEMINI_API_KEY")
+API_KEY = os.getenv("AIzaSyDAzymZr0UE8YCcUMGkyaJ_K-fFYjP9rbI")
 if not API_KEY:
     raise ValueError("GOOGLE_GEMINI_API_KEY environment variable is not set")
 
