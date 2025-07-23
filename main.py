@@ -2,21 +2,19 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import requests
 import os
-from dotenv import load_dotenv
-
-# Load environment variables from .env file
-load_dotenv()
 
 # Initialize Flask app
 app = Flask(__name__)
-CORS(app)  # Allow CORS for all domains temporarily for testing
+
+# CORS: Allow all origins (for development/testing; restrict in production!)
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 # Get API key from environment variables
-API_KEY = os.getenv("GOOGLE_GEMINI_API_KEY")
+API_KEY = os.environ.get("GOOGLE_GEMINI_API_KEY")
 if not API_KEY:
     raise EnvironmentError("Missing GOOGLE_GEMINI_API_KEY in environment variables")
 
-# Google Gemini API endpoint
+# Gemini endpoint
 GEMINI_API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={API_KEY}"
 
 @app.route('/recommend', methods=['POST'])
@@ -34,7 +32,6 @@ def recommend():
         if missing:
             return jsonify({"error": f"Missing required fields: {', '.join(missing)}"}), 400
 
-        # Generate prompt based on user input
         prompt = f"""
 You are an expert martial arts and fitness coach.
 User's Profile:
@@ -62,10 +59,10 @@ Keep it detailed, helpful, and professional.
             ]
         }
 
-        response = requests.post(GEMINI_API_URL, headers=headers, json=body, timeout=10)
+        response = requests.post(GEMINI_API_URL, headers=headers, json=body, timeout=15)
         response.raise_for_status()
         data = response.json()
-        # Gemini API returns results in candidates[0]['content']['parts'][0]['text']
+
         output_text = (
             data.get("candidates", [{}])[0]
             .get("content", {})
@@ -85,4 +82,4 @@ Keep it detailed, helpful, and professional.
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port, debug=False)
+    app.run(host='0.0.0.0', port=port)
