@@ -6,19 +6,16 @@ import requests
 app = Flask(__name__)
 CORS(app, supports_credentials=True)
 
-# Health check endpoint
 @app.route('/', methods=['GET'])
 def index():
     return jsonify({"status": "OK", "message": "API is live!"}), 200
 
 @app.route('/recommend', methods=['POST'])
 def recommend():
-    # Step 1: Validate environment variable
     api_key = os.environ.get("GOOGLE_GEMINI_API_KEY")
     if not api_key:
         return jsonify({"error": "GOOGLE_GEMINI_API_KEY environment variable not set!"}), 500
 
-    # Step 2: Parse and validate input
     try:
         user_input = request.get_json(force=True)
     except Exception:
@@ -32,7 +29,6 @@ def recommend():
     if missing:
         return jsonify({"error": f"Missing required fields: {', '.join(missing)}"}), 400
 
-    # Step 3: Build prompt
     prompt = (
         "You are an expert martial arts and fitness coach.\n"
         f"User's Profile:\n"
@@ -52,7 +48,6 @@ def recommend():
         "Keep it detailed, helpful, and professional."
     )
 
-    # Step 4: Gemini API call
     gemini_url = (
         "https://generativelanguage.googleapis.com/v1beta/models/"
         f"gemini-pro:generateContent?key={api_key}"
@@ -69,7 +64,6 @@ def recommend():
         if resp.status_code != 200:
             return jsonify({"error": f"Gemini API error: {resp.text}"}), 502
         data = resp.json()
-        # Safely extract the response
         output = (
             data.get("candidates", [{}])[0]
             .get("content", {})
