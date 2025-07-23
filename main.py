@@ -49,7 +49,7 @@ def recommend():
     )
 
     gemini_url = (
-        "https://generativelanguage.googleapis.com/v1beta/models/"
+        "https://generativelanguage.googleapis.com/v1/models/"
         f"gemini-pro:generateContent?key={api_key}"
     )
     headers = {"Content-Type": "application/json"}
