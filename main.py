@@ -48,7 +48,9 @@ def recommend():
         "Keep it detailed, helpful, and professional."
     )
 
-    GEMINI_API_URL = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash-latest:generateContent?key={api_key}"
+    GEMINI_API_URL = (
+        "https://generativelanguage.googleapis.com/v1/models/"
+        "gemini-1.5-flash-latest:generateContent?key=" + api_key
     )
     headers = {"Content-Type": "application/json"}
     body = {
@@ -58,7 +60,7 @@ def recommend():
     }
 
     try:
-        resp = requests.post(gemini_url, headers=headers, json=body, timeout=30)
+        resp = requests.post(GEMINI_API_URL, headers=headers, json=body, timeout=30)
         if resp.status_code != 200:
             return jsonify({"error": f"Gemini API error: {resp.text}"}), 502
         data = resp.json()
