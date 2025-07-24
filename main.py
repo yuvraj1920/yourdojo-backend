@@ -6,10 +6,8 @@ import requests
 app = Flask(__name__)
 CORS(app)
 
-# On startup: Detect the supported Gemini model for this API key
 def detect_supported_model(api_key):
-    # Try both v1beta and v1 endpoints and pick the first available model
-    for version in ["v1beta", "v1"]:
+    for version in ["v1", "v1beta"]:
         try:
             resp = requests.get(
                 f"https://generativelanguage.googleapis.com/{version}/models?key={api_key}",
@@ -17,21 +15,29 @@ def detect_supported_model(api_key):
             )
             if resp.status_code == 200:
                 models = resp.json().get("models", [])
-                # Look for a model that supports generateContent
-                for model in models:
-                    model_id = model.get("name", "").split("/")[-1]
-                    if "generateContent" in model.get("supportedGenerationMethods", []):
-                        return version, model_id
-                # If none, try any model with 'pro' in the name as fallback
-                for model in models:
-                    model_id = model.get("name", "").split("/")[-1]
-                    if "pro" in model_id:
-                        return version, model_id
+                # Filter out deprecated and vision models
+                candidates = [
+                    m.get("name", "").split("/")[-1]
+                    for m in models
+                    if (
+                        "vision" not in m.get("name", "")
+                        and not m.get("name", "").endswith("-vision")
+                        and not m.get("name", "").endswith("-vision-latest")
+                        and "generateContent" in m.get("supportedGenerationMethods", [])
+                        and not m.get("name", "").startswith("deprecated")
+                    )
+                ]
+                # Prioritize 1.5-flash, then 1.5-pro, then gemini-pro
+                for model_choice in ["gemini-1.5-flash-latest", "gemini-1.5-pro-latest", "gemini-pro"]:
+                    if model_choice in candidates:
+                        return version, model_choice
+                # Fallback to first model
+                if candidates:
+                    return version, candidates[0]
         except Exception:
             continue
     return None, None
 
-# Get the API key from environment
 API_KEY = os.environ.get("GOOGLE_GEMINI_API_KEY")
 API_VERSION, GEMINI_MODEL = detect_supported_model(API_KEY) if API_KEY else (None, None)
 
@@ -40,7 +46,7 @@ def home():
     if not API_KEY:
         return jsonify({"status": "error", "message": "No API key set in environment"}), 500
     if not GEMINI_MODEL:
-        return jsonify({"status": "error", "message": "No Gemini model found for your API key"}), 500
+        return jsonify({"status": "error", "message": "No usable Gemini model found for your API key. Go to https://aistudio.google.com/app/apikey and create a new key."}), 500
     return jsonify({
         "status": "OK",
         "message": "API is live!",
@@ -53,7 +59,7 @@ def recommend():
     if not API_KEY:
         return jsonify({"error": "GOOGLE_GEMINI_API_KEY environment variable not set in Render."}), 500
     if not GEMINI_MODEL:
-        return jsonify({"error": "No Gemini model found for your API key. Please check your API key at https://aistudio.google.com/app/apikey"}), 500
+        return jsonify({"error": "No usable Gemini model found for your API key. Go to https://aistudio.google.com/app/apikey and create a new key."}), 500
 
     try:
         user_input = request.get_json(force=True)
