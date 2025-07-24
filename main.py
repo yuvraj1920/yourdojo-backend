@@ -4,17 +4,17 @@ from flask_cors import CORS
 import requests
 
 app = Flask(__name__)
-CORS(app, supports_credentials=True)
+CORS(app)
 
 @app.route('/', methods=['GET'])
-def index():
+def home():
     return jsonify({"status": "OK", "message": "API is live!"}), 200
 
 @app.route('/recommend', methods=['POST'])
 def recommend():
     api_key = os.environ.get("GOOGLE_GEMINI_API_KEY")
     if not api_key:
-        return jsonify({"error": "GOOGLE_GEMINI_API_KEY environment variable not set!"}), 500
+        return jsonify({"error": "GOOGLE_GEMINI_API_KEY environment variable not set in Render."}), 500
 
     try:
         user_input = request.get_json(force=True)
@@ -48,8 +48,7 @@ def recommend():
         "Keep it detailed, helpful, and professional."
     )
 
-   GEMINI_API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={api_key}"
-    )
+    GEMINI_API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={api_key}"
     headers = {"Content-Type": "application/json"}
     body = {
         "contents": [
@@ -71,8 +70,6 @@ def recommend():
         if not output:
             return jsonify({"error": "Empty response from Gemini API"}), 500
         return jsonify({"result": output}), 200
-    except requests.exceptions.RequestException as err:
-        return jsonify({"error": f"Failed to connect to Gemini API: {str(err)}"}), 500
     except Exception as e:
         return jsonify({"error": f"Internal server error: {str(e)}"}), 500
 
