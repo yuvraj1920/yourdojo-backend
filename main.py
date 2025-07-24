@@ -48,9 +48,7 @@ def recommend():
         "Keep it detailed, helpful, and professional."
     )
 
-    GEMINI_API_URL = (
-        "https://generativelanguage.googleapis.com/v1/models/"
-        "gemini-1.5-flash-latest:generateContent?key=" + api_key
+   GEMINI_API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={api_key}"
     )
     headers = {"Content-Type": "application/json"}
     body = {
